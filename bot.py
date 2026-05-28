@@ -15,7 +15,10 @@ API_MODEL = os.environ.get("API_MODEL", "gpt-3.5-turbo")
 if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не задан в переменных окружения")
 
-# Хранилище истории диалогов (в памяти, для простоты)
+if not API_KEY:
+    print("⚠️ ВНИМАНИЕ: API_KEY не задан! Бот будет работать, но AI не ответит.")
+
+# Хранилище истории диалогов (в памяти)
 user_histories = {}
 
 # Клавиатура
@@ -37,7 +40,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Я AI-ассистент. Задавай любые вопросы!\n\n"
         f"📌 *Информация:*\n"
         f"• Модель: `{API_MODEL}`\n"
-        f"• API: `{API_URL.split('/')[2]}`\n\n"
+        f"• API: `{API_URL.split('/')[2] if API_URL else 'не указан'}`\n\n"
         f"Нажми на кнопки внизу, чтобы управлять диалогом."
     )
     
@@ -84,7 +87,7 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"• Ваш ID: `{user_id}`\n"
         f"• Сообщений в истории: `{history_len}`\n"
         f"• Модель: `{API_MODEL}`\n"
-        f"• API: `{API_URL.split('/')[2]}`\n\n"
+        f"• API: `{API_URL.split('/')[2] if API_URL else 'не указан'}`\n\n"
         f"✅ Бот работает исправно!"
     )
     
@@ -112,6 +115,9 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ask_ai(user_message: str, history: list) -> str:
     if not API_KEY:
         return "❌ API ключ не задан. Добавь переменную API_KEY в Railway."
+    
+    if not API_URL:
+        return "❌ API URL не задан. Добавь переменную API_URL в Railway."
     
     # Формируем сообщения для API
     messages = []
@@ -147,7 +153,6 @@ async def ask_ai(user_message: str, history: list) -> str:
             
             if response.status_code == 200:
                 data = response.json()
-                # Поддержка разных форматов ответов
                 if "choices" in data and len(data["choices"]) > 0:
                     return data["choices"][0]["message"]["content"]
                 elif "response" in data:
@@ -228,7 +233,12 @@ def main():
     application.add_error_handler(error_handler)
     
     # Запуск
-    print("Бот запущен...")
+    print("🚀 Бот запущен и готов к работе!")
+    print(f"📡 API URL: {API_URL}")
+    print(f"🤖 Модель: {API_MODEL}")
+    print(f"🔑 API Key: {'✅ задан' if API_KEY else '❌ не задан'}")
+    print(f"🎮 Bot Token: {'✅ задан' if BOT_TOKEN else '❌ не задан'}")
+    
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
